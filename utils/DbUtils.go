@@ -2,12 +2,14 @@ package DbUtils
 
 import (
 	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/astaxie/beego"
 	"github.com/beego/bee/logger"
+	_ "github.com/go-sql-driver/mysql"
+	"sync"
 )
 
-var DB *sql.DB
+var db *sql.DB
+var once = sync.Once{}
 
 /**
 
@@ -16,7 +18,16 @@ mysql.username=root
 mysql.password=
 mysql.maxconns=100
 mysql.idelconnes=20
- */
+*/
+func GetDb() *sql.DB {
+	once.Do(Init)
+	return db
+}
+
+func Close() {
+	db.Close()
+}
+
 func Init() {
 	sqlurl := beego.AppConfig.String("mysql.url")
 	username := beego.AppConfig.String("mysql.username")
@@ -32,12 +43,12 @@ func Init() {
 	if len(password) > 0 {
 		password = ":" + password
 	} else {
-		password = "";
+		password = ""
 	}
 
 	dbUrl := username + password + ":@" + sqlurl
-	DB, _ = sql.Open("mysql", dbUrl)
-	DB.SetMaxOpenConns(maxConns)
-	DB.SetMaxIdleConns(idelconnes)
-	//DB.Ping()
+	db, _ = sql.Open("mysql", dbUrl)
+	db.SetMaxOpenConns(maxConns)
+	db.SetMaxIdleConns(idelconnes)
+	db.Ping()
 }
